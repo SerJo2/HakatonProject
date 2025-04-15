@@ -8,11 +8,12 @@ from openai import OpenAI
 
 from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
+from tqdm import tqdm
 
 
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
-# TODO обработка файлов, обработка текста с картинок, добавить прогркссбар
+# TODO обработка файлов, обработка текста с картинок
 
 class WebScraper:
     """Класс для парсинга сайтов"""
@@ -142,7 +143,7 @@ class LlamaApi:
     def generate_answer(self, context, question):
         """Генерация ответа, принимает контекст и вопрос"""
         prompt = f"""Тебе даются данные с сайта. Далее тебе будут заданы вопросы по данным с этого сайта. 
-        Ты должен ответить на данные вопросы или, если информация не найдена ответить "Информация не найдена на странице.".
+        Ты должен конкретно ответить на данные вопросы или, если информация не найдена ответить "Информация не найдена на странице.".
 
         Content: {context}"""
 
@@ -206,11 +207,15 @@ def main():
         start_time = time.time()
         answers_list = []
         question_number = 1
-        for question in QUESTION_TEST:
-            answers_list.append(str(bot.ask_question(question)))
-            print("\r", flush=True)
-            print("Обработано вопросов: " + str(question_number) + " из " + str(len(QUESTION_TEST)))
-            question_number += 1
+
+        for q in tqdm(QUESTION_TEST, desc="Обработка вопросов"):
+            answers_list.append(str(bot.ask_question(q)))
+
+        #for question in QUESTION_TEST:
+        #    answers_list.append(str(bot.ask_question(question)))
+        #    print("\r", flush=True)
+        #    print("Обработано вопросов: " + str(question_number) + " из " + str(len(QUESTION_TEST)))
+        #    question_number += 1
 
         for i in answers_list:
             print(i)
