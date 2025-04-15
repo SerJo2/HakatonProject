@@ -10,6 +10,8 @@ from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
 from tqdm import tqdm
 
+import base64
+
 
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
@@ -32,8 +34,8 @@ class WebScraper:
         try:
             result = urlparse(url)
             return all([result.scheme, result.netloc])
-        except:
-            return False
+        except Exception as e:
+            return f"Ошибка: {str(e)}"
 
     def _is_same_domain(self, url):
         """Проверка того, что внешняя ссылка имеет тот же домен"""
@@ -80,7 +82,7 @@ class WebScraper:
 
             return list(links)
         except Exception as e:
-            logging.error("Error getting links from {url}: {str(e)}")
+            logging.error(f"Error getting links from {url}: {str(e)}")
             return []
 
     def scrape_site(self, base_url):
@@ -160,7 +162,7 @@ class LlamaApi:
             logging.info("Кол-во токенов: " + str(response.usage.total_tokens))
             return response.choices[0].message.content.strip()
         except Exception as e:
-            logging.critical("API Error: {str(e)}")
+            logging.critical(f"API Error: {str(e)}")
             return "Информация не найдена на странице."
 
 
@@ -176,7 +178,7 @@ class ChatBot:
         """Загрузка вебсайта и парсинг его текста и текста с внутренних ссылок"""
         try:
             self.context = self._compress_context(self.scraper.scrape_site(url))
-            return "Данные успешно загружены. Задавайте вопросы."
+            return 0
         except Exception as e:
             return f"Ошибка: {str(e)}"
 
@@ -192,21 +194,17 @@ class ChatBot:
 
 
 def main():
-    start_time = time.time()
-    end_time = time.time()
     bot = ChatBot(API_KEY, BASE_URL)
-    elapsed_time = end_time - start_time
 
     for site in URL_TEST:
         print("Происходит анализ сайта " + site + "...")
-        result = bot.load_website(site)
+        bot.load_website(site)
         print("Анализ завершен")
 
         logging.info(bot.context)
         logging.info("\nБот готов к вопросам")
         start_time = time.time()
         answers_list = []
-        question_number = 1
 
         for q in tqdm(QUESTION_TEST, desc="Обработка вопросов"):
             answers_list.append(str(bot.ask_question(q)))
