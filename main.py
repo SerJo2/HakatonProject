@@ -12,7 +12,6 @@ from tqdm import tqdm
 
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
-# TODO обработка файлов, обработка текста с картинок
 
 class WebScraper:
     """Класс для парсинга сайтов"""
@@ -207,6 +206,7 @@ def main():
             answers_list.append(str(bot.ask_question(q)))
 
         for i in answers_list:
+            print("     -", end="")
             print(i)
         end_time = time.time()
         elapsed_time = end_time - start_time
