@@ -5,7 +5,6 @@ from urllib.parse import urlparse, urljoin
 import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
-from tqdm import tqdm
 
 from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
@@ -206,7 +205,7 @@ def main():
         logging.info("\nБот готов к вопросам")
         start_time = time.time()
         answers_list = []
-
+        question_number = 1
         for question in QUESTION_TEST:
             answers_list.append(str(bot.ask_question(question)))
             print("\r", flush=True)
