@@ -5,10 +5,11 @@ from urllib.parse import urlparse, urljoin
 import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
+from tqdm import tqdm
 
 from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
-from tqdm import tqdm
+
 
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
@@ -22,7 +23,7 @@ class WebScraper:
         self.base_domain = ""
         self.session = requests.Session()
         self.session.headers.update({
-                                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
 
     @staticmethod
     def _is_valid_url(url):
