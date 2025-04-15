@@ -10,7 +10,6 @@ from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
 from tqdm import tqdm
 
-import base64
 
 
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
@@ -42,9 +41,8 @@ class WebScraper:
         target_domain = urlparse(url).netloc
         return target_domain == self.base_domain
 
-    @staticmethod
-    def _extract_content(soup):
-        """Превращает html код в обычный текст"""
+    def _extract_content(self, soup):
+        """Превращает html код в обычный текст и ищет текст с картинок"""
         content = [soup.get_text(separator=' ', strip=True)]
 
         for table in soup.find_all('table'):
@@ -54,15 +52,32 @@ class WebScraper:
             items = [li.get_text(strip=True) for li in lst.find_all('li')]
             content.append(' '.join(items))
 
+        images = set()
+
+        # Обрабатываем все возможные источники изображений
+        for img in soup.find_all('img'):
+            for attr in ['src', 'data-src', 'data-lazy', 'data-original']:
+                if img.has_attr(attr):
+                    img_url = img[attr].strip()
+
+                    # Пропускаем пустые и base64 изображения
+                    if not img_url or img_url.startswith('data:image'):
+                        continue
+
+                    # Преобразуем относительные URL в абсолютные
+                    absolute_url = urljoin(self.base_domain, img_url)
+                    images.add(absolute_url)
+
         return ' '.join(content)
 
     def scrape_page(self, url):
-        """Парсит страницу"""
+        """Парсит страницу, вместе с картинками"""
         try:
             response = self.session.get(url, timeout=10)
             response.raise_for_status()
             soup = BeautifulSoup(response.content, 'html.parser')
             logging.info(url, self._extract_content(soup))
+
             return self._extract_content(soup)
         except Exception as e:
             logging.error(f"Error scraping {url}: {str(e)}")
@@ -85,6 +100,43 @@ class WebScraper:
             logging.error(f"Error getting links from {url}: {str(e)}")
             return []
 
+    def get_image_links(self, url):
+        """Получает все ссылки на изображения с указанного URL"""
+        try:
+            response = self.session.get(url, timeout=10)
+            soup = BeautifulSoup(response.content, 'html.parser')
+            image_links = set()
+
+
+            for img in soup.find_all('img'):
+                src = img.get('src')
+                data_src = img.get('data-src')
+                srcset = img.get('srcset')
+
+
+                if src:
+                    if src.startswith(('http', '//')):
+                        image_links.add(src)
+                    else:
+                        image_links.add(urljoin(url, src))
+
+
+                if data_src:
+                    image_links.add(urljoin(url, data_src))
+
+
+                if srcset:
+                    for source in srcset.split(','):
+                        image_url = source.strip().split(' ')[0]
+                        image_links.add(urljoin(url, image_url))
+
+            return list(image_links)
+
+        except requests.exceptions.RequestException as e:
+            print(f"Ошибка при запросе: {e}")
+            return []
+
+
     def scrape_site(self, base_url):
         """Парсинг всего сайта с внешними ссылками"""
         if not self._is_valid_url(base_url):
@@ -94,10 +146,9 @@ class WebScraper:
         self.visited_urls.clear()
         self.content = []
 
-        # Scrape base URL (depth 0)
         self.content.append(self.scrape_page(base_url))
         self.visited_urls.add(base_url)
-        # Scrape linked pages (depth 1)
+
         for link in self.get_links(base_url):
             if link not in self.visited_urls:
                 self.content.append(self.scrape_page(link))
@@ -187,7 +238,8 @@ class ChatBot:
     def ask_question(self, question):
         """Задание вопроса LLM"""
         if not self.context:
-            return "Сначала загрузите данные сайта."
+            logging.error("context is empty")
+            return ""
 
         return self.api.generate_answer(self.context, question)
 
