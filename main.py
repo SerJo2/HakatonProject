@@ -5,6 +5,7 @@ from urllib.parse import urlparse, urljoin
 import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
+from tqdm import tqdm
 
 from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
@@ -192,31 +193,31 @@ class ChatBot:
 
 def main():
     start_time = time.time()
-    print("Происходит запуск бота...")
     end_time = time.time()
     bot = ChatBot(API_KEY, BASE_URL)
     elapsed_time = end_time - start_time
-    print(f"Бот запущен за {elapsed_time:.2f} секунд")
 
     for site in URL_TEST:
-        start_time = time.time()
         print("Происходит анализ сайта " + site + "...")
         result = bot.load_website(site)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print(f"Анализ сайта завершен за {elapsed_time:.2f} секунд")
+        print("Анализ завершен")
 
         logging.info(bot.context)
         logging.info("\nБот готов к вопросам")
+        start_time = time.time()
+        answers_list = []
 
-        for i in QUESTION_TEST:
-            question = i
-            print(f"Вопрос: {i}.")
-            start_time = time.time()
-            print(f"Ответ: {bot.ask_question(question)}", end=" ")
-            end_time = time.time()
-            elapsed_time = end_time - start_time
-            print(f"Ответ занял {elapsed_time:.2f} секунд\n")
+        for question in QUESTION_TEST:
+            answers_list.append(str(bot.ask_question(question)))
+            print("\r", flush=True)
+            print("Обработано вопросов: " + str(question_number) + " из " + str(len(QUESTION_TEST)))
+            question_number += 1
+
+        for i in answers_list:
+            print(i)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f"Время ответа: {elapsed_time:.2f} секунд")
 
 
 if __name__ == "__main__":
