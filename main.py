@@ -1,15 +1,16 @@
-from urllib.parse import urlparse, urljoin
-from bs4 import BeautifulSoup
-from openai import OpenAI
-import requests
 import logging
 import time
+from urllib.parse import urlparse, urljoin
 
+import requests
+from bs4 import BeautifulSoup
+from openai import OpenAI
 
-from prefs import API_KEY, BASE_URL
 from input import QUESTION_TEST, URL_TEST
+from prefs import API_KEY, BASE_URL
 
-#logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
+
+# logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
 # TODO обработка файлов, обработка текста с картинок, добавить прогркссбар
 
@@ -21,7 +22,8 @@ class WebScraper:
         self.content = []
         self.base_domain = ""
         self.session = requests.Session()
-        self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
+        self.session.headers.update({
+                                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
 
     @staticmethod
     def _is_valid_url(url):
@@ -42,10 +44,8 @@ class WebScraper:
         """Превращает html код в обычный текст"""
         content = [soup.get_text(separator=' ', strip=True)]
 
-
         for table in soup.find_all('table'):
             content.append(table.get_text(separator=' | ', strip=True))
-
 
         for lst in soup.find_all(['ul', 'ol']):
             items = [li.get_text(strip=True) for li in lst.find_all('li')]
@@ -103,8 +103,10 @@ class WebScraper:
 
         return ' '.join(self.content).strip()
 
+
 class LlamaApi:
     """Класс для LLM"""
+
     def __init__(self, api_key, base_url):
         self.client = OpenAI(
             api_key=api_key,
@@ -120,11 +122,12 @@ class LlamaApi:
             response = self.client.chat.completions.create(
                 model="gemini-2.0-flash-lite-001",
                 messages=[
-                    {"role": "user", "content": "Сократи данный текст без потерь важной информации(Сохрани всю информацию "
-                                                "об организаторах, месте и дат проведения, контактами, структуре мероприятия, формат проведения, "
-                                                "стоимости участия, соцсетях, призах, условиях участия, дат принятия заявок/даты этапов,"
-                                                "кто будет учавствовать и тд"
-                                                "): " + text}
+                    {"role": "user",
+                     "content": "Сократи данный текст без потерь важной информации(Сохрани всю информацию "
+                                "об организаторах, месте и дат проведения, контактами, структуре мероприятия, формат проведения, "
+                                "стоимости участия, соцсетях, призах, условиях участия, дат принятия заявок/даты этапов,"
+                                "кто будет учавствовать и тд"
+                                "): " + text}
                 ],
                 max_tokens=20000,
                 temperature=0.1
@@ -159,8 +162,10 @@ class LlamaApi:
             logging.critical("API Error: {str(e)}")
             return "Информация не найдена на странице."
 
+
 class ChatBot:
     """Класс для реализации консольного бота"""
+
     def __init__(self, api_key, base_url):
         self.scraper = WebScraper()
         self.api = LlamaApi(api_key, base_url)
@@ -177,7 +182,6 @@ class ChatBot:
     def _compress_context(self, text):
         return self.api.compress_text(text)
 
-
     def ask_question(self, question):
         """Задание вопроса LLM"""
         if not self.context:
@@ -185,21 +189,14 @@ class ChatBot:
 
         return self.api.generate_answer(self.context, question)
 
+
 def main():
-
-
-
-
-
-
-
     start_time = time.time()
     print("Происходит запуск бота...")
     end_time = time.time()
     bot = ChatBot(API_KEY, BASE_URL)
     elapsed_time = end_time - start_time
     print(f"Бот запущен за {elapsed_time:.2f} секунд")
-
 
     for site in URL_TEST:
         start_time = time.time()
@@ -220,5 +217,7 @@ def main():
             end_time = time.time()
             elapsed_time = end_time - start_time
             print(f"Ответ занял {elapsed_time:.2f} секунд\n")
+
+
 if __name__ == "__main__":
     main()
