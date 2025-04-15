@@ -1,16 +1,17 @@
-import requests
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
-import textwrap
 from openai import OpenAI
 import requests
+import logging
+import time
 
 
-from prefs import API_KEY,BASE_URL,URL_TEST,QUESTION_TEST
-from tqdm import tqdm
+from prefs import API_KEY, BASE_URL
+from input import QUESTION_TEST, URL_TEST
 
+#logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
-# TODO обработка файлов, обработка текста с картинок,
+# TODO обработка файлов, обработка текста с картинок, добавить прогркссбар
 
 class WebScraper:
     """Класс для парсинга сайтов"""
@@ -22,7 +23,8 @@ class WebScraper:
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
 
-    def _is_valid_url(self, url):
+    @staticmethod
+    def _is_valid_url(url):
         """Проверка валидности url"""
         try:
             result = urlparse(url)
@@ -35,18 +37,16 @@ class WebScraper:
         target_domain = urlparse(url).netloc
         return target_domain == self.base_domain
 
-    def _extract_content(self, soup):
+    @staticmethod
+    def _extract_content(soup):
         """Превращает html код в обычный текст"""
-        content = []
+        content = [soup.get_text(separator=' ', strip=True)]
 
-        # Main text
-        content.append(soup.get_text(separator=' ', strip=True))
 
-        # Tables
         for table in soup.find_all('table'):
             content.append(table.get_text(separator=' | ', strip=True))
 
-        # Lists
+
         for lst in soup.find_all(['ul', 'ol']):
             items = [li.get_text(strip=True) for li in lst.find_all('li')]
             content.append(' '.join(items))
@@ -59,10 +59,10 @@ class WebScraper:
             response = self.session.get(url, timeout=10)
             response.raise_for_status()
             soup = BeautifulSoup(response.content, 'html.parser')
-            print(url, self._extract_content(soup))
+            logging.info(url, self._extract_content(soup))
             return self._extract_content(soup)
         except Exception as e:
-            print(f"Error scraping {url}: {str(e)}")
+            logging.error(f"Error scraping {url}: {str(e)}")
             return ""
 
     def get_links(self, url):
@@ -79,7 +79,7 @@ class WebScraper:
 
             return list(links)
         except Exception as e:
-            print(f"Error getting links from {url}: {str(e)}")
+            logging.error("Error getting links from {url}: {str(e)}")
             return []
 
     def scrape_site(self, base_url):
@@ -115,7 +115,7 @@ class LlamaApi:
     def compress_text(self, text):
         """Сжатие информации с помощью LLM"""
 
-        print("начло")
+        logging.info("начало Сжатия")
         try:
             response = self.client.chat.completions.create(
                 model="gemini-2.0-flash-lite-001",
@@ -129,11 +129,11 @@ class LlamaApi:
                 max_tokens=20000,
                 temperature=0.1
             )
-            print(response.usage.total_tokens)
-            print(response.choices[0].message.content.strip())
+            logging.info("Использовано токенов: " + str(response.usage.total_tokens))
+            (response.choices[0].message.content.strip())
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"API Error: {str(e)}")
+            logging.critical(f"API Error: {str(e)}")
             return "Информация не найдена на странице."
 
     def generate_answer(self, context, question):
@@ -153,10 +153,10 @@ class LlamaApi:
                 max_tokens=50000,
                 temperature=0.7
             )
-            print(response.usage.total_tokens)
+            logging.info("Кол-во токенов: " + str(response.usage.total_tokens))
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"API Error: {str(e)}")
+            logging.critical("API Error: {str(e)}")
             return "Информация не найдена на странице."
 
 class ChatBot:
@@ -186,14 +186,39 @@ class ChatBot:
         return self.api.generate_answer(self.context, question)
 
 def main():
-    bot = ChatBot(API_KEY, BASE_URL)
-    result = bot.load_website(URL_TEST[0])
-    print(bot.context)
-    # User questions
-    print("\nБот готов к вопросам (введите 'выход' для завершения)")
-    for i in QUESTION_TEST:
-        question = i
-        print(f"Бот: {bot.ask_question(question)}")
 
+
+
+
+
+
+
+    start_time = time.time()
+    print("Происходит запуск бота...")
+    end_time = time.time()
+    bot = ChatBot(API_KEY, BASE_URL)
+    elapsed_time = end_time - start_time
+    print(f"Бот запущен за {elapsed_time:.2f} секунд")
+
+
+    for site in URL_TEST:
+        start_time = time.time()
+        print("Происходит анализ сайта " + site + "...")
+        result = bot.load_website(site)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Анализ сайта завершен за {elapsed_time:.2f} секунд")
+
+        logging.info(bot.context)
+        logging.info("\nБот готов к вопросам")
+
+        for i in QUESTION_TEST:
+            question = i
+            print(f"Вопрос: {i}.")
+            start_time = time.time()
+            print(f"Ответ: {bot.ask_question(question)}", end=" ")
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print(f"Ответ занял {elapsed_time:.2f} секунд\n")
 if __name__ == "__main__":
     main()
