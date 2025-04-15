@@ -140,7 +140,7 @@ class LlamaApi:
     def generate_answer(self, context, question):
         """Генерация ответа, принимает контекст и вопрос"""
         prompt = f"""Тебе даются данные с сайта. Далее тебе будут заданы вопросы по данным с этого сайта. 
-        Ты должен конкретно ответить на данные вопросы или, если информация не найдена ответить "Информация не найдена на странице.".
+        Ты должен конкретно и без своих домыслов ответить на данные вопросы или, если информация не найдена ответить "Информация не найдена на странице.".
 
         Content: {context}"""
 
@@ -152,7 +152,7 @@ class LlamaApi:
                     {"role": "user", "content": question}
                 ],
                 max_tokens=50000,
-                temperature=0.7
+                temperature=0.6
             )
             logging.info("Кол-во токенов: " + str(response.usage.total_tokens))
             return response.choices[0].message.content.strip()
