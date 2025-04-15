@@ -10,12 +10,8 @@ from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
 from tqdm import tqdm
 
-import base64
-
-
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
-# TODO обработка файлов, обработка текста с картинок
 
 class WebScraper:
     """Класс для парсинга сайтов"""
@@ -63,6 +59,7 @@ class WebScraper:
             response.raise_for_status()
             soup = BeautifulSoup(response.content, 'html.parser')
             logging.info(url, self._extract_content(soup))
+
             return self._extract_content(soup)
         except Exception as e:
             logging.error(f"Error scraping {url}: {str(e)}")
@@ -94,10 +91,9 @@ class WebScraper:
         self.visited_urls.clear()
         self.content = []
 
-        # Scrape base URL (depth 0)
         self.content.append(self.scrape_page(base_url))
         self.visited_urls.add(base_url)
-        # Scrape linked pages (depth 1)
+
         for link in self.get_links(base_url):
             if link not in self.visited_urls:
                 self.content.append(self.scrape_page(link))
@@ -187,7 +183,8 @@ class ChatBot:
     def ask_question(self, question):
         """Задание вопроса LLM"""
         if not self.context:
-            return "Сначала загрузите данные сайта."
+            logging.error("context is empty")
+            return ""
 
         return self.api.generate_answer(self.context, question)
 
@@ -209,6 +206,7 @@ def main():
             answers_list.append(str(bot.ask_question(q)))
 
         for i in answers_list:
+            print("     -", end="")
             print(i)
         end_time = time.time()
         elapsed_time = end_time - start_time
