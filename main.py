@@ -51,6 +51,8 @@ class WebScraper:
             items = [li.get_text(strip=True) for li in lst.find_all('li')]
             content.append(' '.join(items))
 
+        return ' '.join(content)
+
     def scrape_page(self, url):
         """Парсит страницу"""
         try:
