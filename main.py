@@ -97,7 +97,6 @@ class WebScraper:
         # Scrape base URL (depth 0)
         self.content.append(self.scrape_page(base_url))
         self.visited_urls.add(base_url)
-
         # Scrape linked pages (depth 1)
         for link in self.get_links(base_url):
             if link not in self.visited_urls:
@@ -108,7 +107,7 @@ class WebScraper:
 
 
 class LlamaApi:
-    """Класс для LLM"""
+    """Класс для LLM, не только для Llama, но и для gemini"""
 
     def __init__(self, api_key, base_url):
         self.client = OpenAI(
@@ -208,12 +207,6 @@ def main():
 
         for q in tqdm(QUESTION_TEST, desc="Обработка вопросов"):
             answers_list.append(str(bot.ask_question(q)))
-
-        #for question in QUESTION_TEST:
-        #    answers_list.append(str(bot.ask_question(question)))
-        #    print("\r", flush=True)
-        #    print("Обработано вопросов: " + str(question_number) + " из " + str(len(QUESTION_TEST)))
-        #    question_number += 1
 
         for i in answers_list:
             print(i)
