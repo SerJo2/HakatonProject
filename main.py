@@ -10,8 +10,6 @@ from input import QUESTION_TEST, URL_TEST
 from prefs import API_KEY, BASE_URL
 from tqdm import tqdm
 
-
-
 # logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
 
 # TODO обработка файлов, обработка текста с картинок
